@@ -4,10 +4,10 @@ class GithubHookController < ApplicationController
   skip_before_action :verify_authenticity_token, :check_if_login_required
 
   def index
-    message_logger = GithubHook::MessageLogger.new(logger)
-    update_repository(message_logger) if request.post?
-    messages = message_logger.messages.map { |log| log[:message] }
-    render(:json => messages)
+    if request.post?
+      ProcessGithubWebhook.perform_later(params.permit!)
+      render status: :accepted, plain: "Accepted"
+    end
 
   rescue ActiveRecord::RecordNotFound => error
     render_error_as_json(error, 404)
